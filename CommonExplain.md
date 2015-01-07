@@ -1,5 +1,6 @@
 ##这是我R语言代码通用的注释样式
-···
+
+```R
 #File-Name:       simple_decryption.R
 #Date:            2015-01-07 10:14:00
 #Author:          Clebeg
@@ -8,6 +9,6 @@
 #Data Used:       nothing
 #Packages Used:   ggplot2
 #Machine:         Clebeg'Lenovo Y485
-···
+```
 
 **没有规矩不成方圆，希望继续努力好好走下去**
