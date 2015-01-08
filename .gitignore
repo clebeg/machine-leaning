@@ -5,8 +5,11 @@
 *-Ex.R
 
 # R data files from past sessions
-.Rdata
+*.Rdata
 
 # RStudio files
 .Rproj.user/
 .Rproj.user
+
+!ml/decryption_algorithm/lexical_database.Rdata
+*~
