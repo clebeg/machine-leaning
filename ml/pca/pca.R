@@ -1,4 +1,4 @@
-#File-Name:       simple_decryption.R
+#File-Name:       pca.R
 #Date:            2015-01-08 15:50:00
 #Author:          Clebeg
 #Email:           clebeg@163.com
@@ -30,20 +30,23 @@ prices <- read.csv('pca/stock_prices.csv')
 library('lubridate')
 prices <- transform(prices, Date = ymd(Date))
 
-#install('reshape')
+#install.packages('reshape')
 library('reshape')
-date.stock.matrx <- cast(prices, Date ~ Stock, value = 'Close')
-prices <- subset(prices, Date != ymd('2012-02-01'))
-prices <- subset(prices, Stock != 'DDR')
+
+#cast 函数用户 cat函数的第二个参数波浪号之前指定行，波浪号之后指定列，最后value指定行列的值
+#波浪号之后的每一种情况作为列名
 date.stock.matrix <- cast(prices, Date ~ Stock, value = 'Close')
+
+date.stock.matrix <- na.omit(date.stock.matrix)
 
 cor.matrix <- cor(date.stock.matrix[, 2:ncol(date.stock.matrix)])
 correlations <- as.numeric(cor.matrix)
 
-ggplot(data.frame(Correlaton = correlations),
+library(ggplot2)
+ggplot(data.frame(Correlation = correlations),
 				aes(x = Correlation, fill = 1)) +
 	geom_density() +
-	opts(legend.position = 'none')
+	theme(legend.position = 'none')
 	
 #在R语言里面使用主成分分析算法，只要使用这个函数 princomp 主成分每个单词的前四个字母
 pca <- princomp(date.stock.matrix[, 2:ncol(date.stock.matrix)])
@@ -55,23 +58,21 @@ loadings <- as.numeric(principal.component)
 ggplot(data.frame(Loading = loadings),
 			aes(x = Loading, fill = 1)) +
 	geom_density() +
-	opts(legend.position = 'none')
+	theme(legend.position = 'none')
 
 #利用predict函数可以获得第一主成分
 market.index <- predict(pca)[, 1]
 
+our.index <- data.frame(Date = date.stock.matrix$Date,
+                        MarketIndex = market.index)
+
 #利用有名的Dow Jones Index 市场指数来拿我们的指数与之对比，看看效果如何
 dji.prices <- read.csv('pca/DJI.csv')
-dji.prices <- transform(dji.prices, Date = ymd(Date))
 
-#提取我们感兴趣的日期段
-dji.prices <- subset(dji.prices, Date > ymd('2001-12-31'))
-dji.prices <- subset(dji.prices, Date != ymd('2002-02-01'))
+library(sqldf)
 
-dji <- with(dji.prices, rev(Close))
-dates <- with(dji.prices, rev(Date))
-
-comparison <- data.frame(Date = dates, MarketIndex = market.index, DJI = dji)
+comparison <- sqldf("select a.Date, a.MarketIndex, b.close as DJI from 'our.index' a, 'dji.prices' b where a.Date = b.Date")
+comparison <- transform(comparison, MarketIndex = scale(MarketIndex), DJI = scale(DJI))
 ggplot(comparison, aes(x = MarketIndex, y = DJI)) +
  geom_point() +
  geom_smooth(method = 'lm', se = FALSE)
@@ -85,6 +86,7 @@ ggplot(comparison, aes(x = MarketIndex, y = DJI)) +
 alt.comparison <- melt(comparison, id.vars = 'Date')
 names(alt.comparison) <- c('Date', 'Index', 'Price')
 
-ggplot(alt.comparison, aes(x = Date, y = scale(Price), group = scale(Index), color = Index)) +
+
+ggplot(alt.comparison, aes(x = Date, y = Price, group = Index, color = Index)) +
 	geom_point() +
 	geom_line()
